@@ -5,6 +5,7 @@
  *   - contraction 环收缩：高亮环节点与环边，并列出代价修正明细
  *   - expansion 展开替换：高亮进入通道与保留环边，标出被替换的环边
  */
+import { formatBigInt, toBigInt } from "../lib/bigintjson";
 export default function RecordPanel({ record, selectedItem, onSelect }) {
   if (!record) return null;
   const { levels, expansions } = record;
@@ -59,8 +60,8 @@ export default function RecordPanel({ record, selectedItem, onSelect }) {
                   {cy.rewired_in.map((r) => (
                     <li key={r.channel}>
                       进入候选 <code>{r.channel}</code>（{r.from}→{r.to}）
-                      代价 {r.original_cost} − {r.original_cost - r.adjusted_cost}
-                      （{r.enters} 的当前入口）= 修正代价 <strong>{r.adjusted_cost}</strong>
+                      代价 {formatBigInt(r.original_cost)} − {formatBigInt(toBigInt(r.original_cost) - toBigInt(r.adjusted_cost))}
+                      （{r.enters} 的当前入口）= 修正代价 <strong>{formatBigInt(r.adjusted_cost)}</strong>
                     </li>
                   ))}
                   {cy.dropped_internal.length > 0 && (

@@ -23,13 +23,23 @@ describe("parsePoints", () => {
 });
 
 describe("parseChannels", () => {
-  it("解析四段式行并忽略注释", () => {
+  it("解析四段式行并忽略注释；代价保留为十进制字符串", () => {
     const { channels, errors } = parseChannels("# 注释\ne1, r, a, 5\ne2 a b 0\n");
     expect(errors).toEqual([]);
     expect(channels).toEqual([
-      { id: "e1", from: "r", to: "a", cost: 5 },
-      { id: "e2", from: "a", to: "b", cost: 0 },
+      { id: "e1", from: "r", to: "a", cost: "5" },
+      { id: "e2", from: "a", to: "b", cost: "0" },
     ]);
+  });
+  it("超过 2^53−1 的代价保留完整十进制，不做 parseInt", () => {
+    const { channels, errors } = parseChannels(
+      "e1, r, a, 9007199254740993\ne2, r, a, 9007199254740992\n"
+    );
+    expect(errors).toEqual([]);
+    expect(channels[0].cost).toBe("9007199254740993");
+    expect(channels[1].cost).toBe("9007199254740992");
+    // 两个相邻大整数未被塌缩为同一 double
+    expect(channels[0].cost).not.toBe(channels[1].cost);
   });
   it("拒绝段数不对与负代价", () => {
     const { errors } = parseChannels("e1, r, a\ne2, r, a, -1\n");

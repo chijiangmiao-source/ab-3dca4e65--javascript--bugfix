@@ -1,4 +1,9 @@
-/** 输入解析与客户端校验（与服务端规则保持一致）。 */
+/** 输入解析与客户端校验（与服务端规则保持一致）。
+ *
+ * 代价在解析阶段始终保留为十进制字符串：代价允许任意非负整数，
+ * 可能超过 Number.MAX_SAFE_INTEGER（2^53−1），parseInt 会丢精度。
+ * 需要数值语义时由 bigintjson.js 的 toBigInt 精确转换。
+ */
 
 export const LIMITS = { minPoints: 2, maxPoints: 40, maxChannels: 160, maxIdLen: 32 };
 
@@ -47,7 +52,7 @@ export function parseChannels(text) {
       errors.push(`第 ${idx + 1} 行：代价须为非负整数，实际为 "${costRaw}"`);
       return;
     }
-    channels.push({ id, from, to, cost: parseInt(costRaw, 10) });
+    channels.push({ id, from, to, cost: costRaw });
   });
   if (channels.length > LIMITS.maxChannels) {
     errors.push(`通道数量至多为 ${LIMITS.maxChannels}，当前为 ${channels.length}`);

@@ -21,5 +21,7 @@ test -f dist/index.html
 test -n "$(ls -A dist/assets)"
 
 echo "== [4/4] 真实 API 与页面结果核对 + API/HTTP 冒烟 =="
+echo "        含 2^53 边界大整数样例，以及复用页面源码的"
+echo "        文本录入→提交→响应处理/展示 全链路精度验收"
 cd /srv/verify
 python verify.py

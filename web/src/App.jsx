@@ -4,6 +4,7 @@ import InputPanel from "./components/InputPanel";
 import RecordPanel from "./components/RecordPanel";
 import TreePanel from "./components/TreePanel";
 import { buildEdgeGeometries, layeredLayout } from "./lib/layout";
+import { formatBigInt, parseJsonBigInts, stringifyJsonBigInts, toBigInt } from "./lib/bigintjson";
 import { parseChannels, parsePoints, reachableFrom, validateAll } from "./lib/parse";
 import { SAMPLES } from "./lib/samples";
 
@@ -118,16 +119,24 @@ export default function App() {
     setLoading(true);
     setFailure(null);
     try {
+      // 代价以十进制字符串保留，转 BigInt 后裸整数字面量提交，超过 2^53−1 也不丢精度
+      const reqBody = stringifyJsonBigInts({
+        points: parsed.points,
+        root: rootText.trim(),
+        channels: parsed.channels.map((c) => ({
+          id: c.id,
+          from: c.from,
+          to: c.to,
+          cost: toBigInt(c.cost),
+        })),
+      });
       const resp = await fetch(`${API_BASE}/api/solve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          points: parsed.points,
-          root: rootText.trim(),
-          channels: parsed.channels.map((c) => ({ id: c.id, from: c.from, to: c.to, cost: c.cost })),
-        }),
+        body: reqBody,
       });
-      const body = await resp.json();
+      // 响应中的 total_cost / 逐边代价同样可能超出安全整数，须以 BigInt 解析
+      const body = parseJsonBigInts(await resp.text());
       if (resp.ok && body.status === "ok") {
         setResult(body);
         setFailure(null);
@@ -230,7 +239,7 @@ export default function App() {
               {selectedChannel && (
                 <span className="edge-detail">
                   选中通道 <code>{selectedChannel.id}</code>：
-                  {selectedChannel.from} → {selectedChannel.to}，代价 {selectedChannel.cost}
+                  {selectedChannel.from} → {selectedChannel.to}，代价 {formatBigInt(selectedChannel.cost)}
                   {treeSet.has(selectedChannel.id) ? "（入选规范树）" : "（未入选）"}
                 </span>
               )}
