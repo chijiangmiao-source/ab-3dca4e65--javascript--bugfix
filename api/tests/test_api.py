@@ -39,6 +39,30 @@ def test_solve_ok():
     assert len(body["record"]["expansions"]) == 2
 
 
+def test_solve_large_precision_costs():
+    """超过 JS 安全整数范围的相邻非负整数：服务端逐位保精度并选实际更便宜的 e2。"""
+    e1_cost = 9007199254740993  # 2^53+1
+    e2_cost = 9007199254740992  # 2^53
+    payload = {
+        "points": ["r", "a"],
+        "root": "r",
+        "channels": [
+            {"id": "e1", "from": "r", "to": "a", "cost": e1_cost},
+            {"id": "e2", "from": "r", "to": "a", "cost": e2_cost},
+        ],
+    }
+    r = client.post("/api/solve", json=payload)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    assert body["canonical_ids"] == ["e2"]
+    assert body["total_cost"] == e2_cost
+    assert body["tree"] == [{"id": "e2", "from": "r", "to": "a", "cost": e2_cost}]
+    # 代价以原始十进制整数出现在响应文本中（未被转换 / 加引号）
+    raw = r.text
+    assert f'"total_cost":{e2_cost}' in raw.replace(" ", "")
+
+
 def test_solve_unsolvable():
     payload = {
         "points": ["r", "a", "z"],

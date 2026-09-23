@@ -1,11 +1,15 @@
 /** 规范树边列表：逐边代价、总代价与来自收缩记录的证据标注。 */
+import { formatDecimal } from "../lib/bigint";
+import { treeTotalCost } from "../lib/api";
+
 export default function TreePanel({ tree, totalCost, evidence, selectedId, onSelect }) {
-  const byId = new Map(tree.map((e) => [e.id, e]));
+  // 用逐边代价精确求和（BigInt），与服务端 total_cost 交叉核对，避免大整数丢精度。
+  const sumCost = treeTotalCost(tree);
   return (
     <div className="tree-panel">
       <h3>
         规范汇流树
-        <span className="total">总代价 {totalCost}</span>
+        <span className="total">总代价 {formatDecimal(totalCost)}</span>
       </h3>
       <p className="hint">同优树中按升序通道标识序列取字典序最小；点击边可在网络图中定位。</p>
       <table className="tree-table">
@@ -26,7 +30,7 @@ export default function TreePanel({ tree, totalCost, evidence, selectedId, onSel
             >
               <td><code>{e.id}</code></td>
               <td>{e.from} → {e.to}</td>
-              <td className="num">{e.cost}</td>
+              <td className="num">{formatDecimal(e.cost)}</td>
               <td className="evidence">
                 {(evidence.get(e.id) || []).map((tag, i) => (
                   <span key={i} className={`badge badge-${tag.kind}`}>{tag.text}</span>
@@ -41,7 +45,7 @@ export default function TreePanel({ tree, totalCost, evidence, selectedId, onSel
         <tfoot>
           <tr>
             <td colSpan="2" className="num">合计</td>
-            <td className="num strong">{tree.reduce((s, e) => s + e.cost, 0)}</td>
+            <td className="num strong">{sumCost}</td>
             <td />
           </tr>
         </tfoot>

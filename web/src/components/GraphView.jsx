@@ -1,4 +1,5 @@
 import { edgePath, NODE_R } from "../lib/layout";
+import { formatDecimal } from "../lib/bigint";
 
 /** SVG 网络图：全部输入通道为底图，规范树高亮，支持收缩记录联动。 */
 export default function GraphView({
@@ -60,14 +61,16 @@ export default function GraphView({
           : inTree
             ? "url(#arrow-tree)"
             : "url(#arrow)";
+        const label = formatDecimal(c.cost);
+        const labelW = Math.max(36, label.length * 8 + 12);
         return (
           <g key={c.id} className={cls} onClick={() => onSelect(c.id)}>
             <path className="edge-hit" d={p.d} markerEnd={marker} />
             <path className="edge-line" d={p.d} markerEnd={marker} />
             <g transform={`translate(${p.labelX},${p.labelY})`} className="edge-label">
-              <rect x="-18" y="-9" width="36" height="16" rx="3" />
+              <rect x={-labelW / 2} y="-9" width={labelW} height="16" rx="3" />
               <text textAnchor="middle" dy="3">
-                {c.cost}
+                {label}
               </text>
             </g>
           </g>

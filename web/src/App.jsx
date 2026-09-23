@@ -4,6 +4,8 @@ import InputPanel from "./components/InputPanel";
 import RecordPanel from "./components/RecordPanel";
 import TreePanel from "./components/TreePanel";
 import { buildEdgeGeometries, layeredLayout } from "./lib/layout";
+import { formatDecimal } from "./lib/bigint";
+import { buildSolveRequestBody, parseSolveResponse } from "./lib/api";
 import { parseChannels, parsePoints, reachableFrom, validateAll } from "./lib/parse";
 import { SAMPLES } from "./lib/samples";
 
@@ -121,13 +123,13 @@ export default function App() {
       const resp = await fetch(`${API_BASE}/api/solve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: buildSolveRequestBody({
           points: parsed.points,
           root: rootText.trim(),
-          channels: parsed.channels.map((c) => ({ id: c.id, from: c.from, to: c.to, cost: c.cost })),
+          channels: parsed.channels,
         }),
       });
-      const body = await resp.json();
+      const body = parseSolveResponse(await resp.text());
       if (resp.ok && body.status === "ok") {
         setResult(body);
         setFailure(null);
@@ -230,7 +232,7 @@ export default function App() {
               {selectedChannel && (
                 <span className="edge-detail">
                   选中通道 <code>{selectedChannel.id}</code>：
-                  {selectedChannel.from} → {selectedChannel.to}，代价 {selectedChannel.cost}
+                  {selectedChannel.from} → {selectedChannel.to}，代价 {formatDecimal(selectedChannel.cost)}
                   {treeSet.has(selectedChannel.id) ? "（入选规范树）" : "（未入选）"}
                 </span>
               )}

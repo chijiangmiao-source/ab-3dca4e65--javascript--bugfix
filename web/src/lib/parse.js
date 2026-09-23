@@ -47,7 +47,8 @@ export function parseChannels(text) {
       errors.push(`第 ${idx + 1} 行：代价须为非负整数，实际为 "${costRaw}"`);
       return;
     }
-    channels.push({ id, from, to, cost: parseInt(costRaw, 10) });
+    // 代价保留为 BigInt：超过 2^53-1 的合法非负整数也不得丢精度。
+    channels.push({ id, from, to, cost: BigInt(costRaw) });
   });
   if (channels.length > LIMITS.maxChannels) {
     errors.push(`通道数量至多为 ${LIMITS.maxChannels}，当前为 ${channels.length}`);

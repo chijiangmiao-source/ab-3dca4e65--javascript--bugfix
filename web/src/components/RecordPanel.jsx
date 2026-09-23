@@ -4,7 +4,11 @@
  *   - level 选择记录：高亮该层选中的全部通道
  *   - contraction 环收缩：高亮环节点与环边，并列出代价修正明细
  *   - expansion 展开替换：高亮进入通道与保留环边，标出被替换的环边
+ *
+ * 所有代价字段均为 BigInt，展示时统一走 formatDecimal，保证大整数不丢精度。
  */
+import { formatDecimal, subtractDecimal } from "../lib/bigint";
+
 export default function RecordPanel({ record, selectedItem, onSelect }) {
   if (!record) return null;
   const { levels, expansions } = record;
@@ -56,13 +60,16 @@ export default function RecordPanel({ record, selectedItem, onSelect }) {
                   ；环边 <code>{cy.channels.join(" → ")}</code>
                 </span>
                 <ul className="rewire-list">
-                  {cy.rewired_in.map((r) => (
-                    <li key={r.channel}>
-                      进入候选 <code>{r.channel}</code>（{r.from}→{r.to}）
-                      代价 {r.original_cost} − {r.original_cost - r.adjusted_cost}
-                      （{r.enters} 的当前入口）= 修正代价 <strong>{r.adjusted_cost}</strong>
-                    </li>
-                  ))}
+                  {cy.rewired_in.map((r) => {
+                    const deducted = subtractDecimal(r.original_cost, r.adjusted_cost);
+                    return (
+                      <li key={r.channel}>
+                        进入候选 <code>{r.channel}</code>（{r.from}→{r.to}）
+                        代价 {formatDecimal(r.original_cost)} − {formatDecimal(deducted)}
+                        （{r.enters} 的当前入口）= 修正代价 <strong>{formatDecimal(r.adjusted_cost)}</strong>
+                      </li>
+                    );
+                  })}
                   {cy.dropped_internal.length > 0 && (
                     <li className="muted">
                       丢弃环内非环边：<code>{cy.dropped_internal.join(", ") || "无"}</code>

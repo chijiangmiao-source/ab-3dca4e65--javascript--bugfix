@@ -27,8 +27,8 @@ describe("parseChannels", () => {
     const { channels, errors } = parseChannels("# 注释\ne1, r, a, 5\ne2 a b 0\n");
     expect(errors).toEqual([]);
     expect(channels).toEqual([
-      { id: "e1", from: "r", to: "a", cost: 5 },
-      { id: "e2", from: "a", to: "b", cost: 0 },
+      { id: "e1", from: "r", to: "a", cost: 5n },
+      { id: "e2", from: "a", to: "b", cost: 0n },
     ]);
   });
   it("拒绝段数不对与负代价", () => {
@@ -38,6 +38,20 @@ describe("parseChannels", () => {
   it("拒绝超过 160 条", () => {
     const text = Array.from({ length: 161 }, (_, i) => `c${i}, r, a, 1`).join("\n");
     expect(parseChannels(text).errors.length).toBeGreaterThan(0);
+  });
+  it("保留超过 2^53-1 的相邻大整数且大小关系不变", () => {
+    // 9007199254740993 与 9007199254740992 若走 parseInt 会塌缩成同一个 Number
+    const text =
+      "e1, r, a, 9007199254740993\ne2, r, a, 9007199254740992";
+    const { channels, errors } = parseChannels(text);
+    expect(errors).toEqual([]);
+    expect(channels.map((c) => c.cost)).toEqual([
+      9007199254740993n,
+      9007199254740992n,
+    ]);
+    const [e1, e2] = channels;
+    expect(e1.cost).not.toBe(e2.cost);
+    expect(e1.cost > e2.cost).toBe(true);
   });
 });
 
